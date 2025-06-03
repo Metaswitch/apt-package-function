@@ -57,13 +57,13 @@ resource defBlobServices 'Microsoft.Storage/storageAccounts/blobServices@2023-01
   parent: storageAccount
   name: 'default'
 }
-resource packageContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-01-01' = {
+resource packageContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2024-01-01' = {
   parent: defBlobServices
   name: package_container_name
   properties: {
   }
 }
-resource pythonContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-01-01' = if (!use_shared_keys) {
+resource pythonContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2024-01-01' = if (!use_shared_keys) {
   parent: defBlobServices
   name: python_container_name
   properties: {
