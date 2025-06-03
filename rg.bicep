@@ -42,7 +42,7 @@ var common_storage_properties = {
 var storage_properties = use_shared_keys ? common_storage_properties : union(common_storage_properties, {
   allowSharedKeyAccess: false
 })
-resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
+resource storageAccount 'Microsoft.Storage/storageAccounts@2024-01-01' = {
   name: storage_account_name
   location: location
   kind: 'StorageV2'
