@@ -28,7 +28,7 @@ var package_container_name = 'packages'
 var python_container_name = 'python'
 
 // Create a UAMI for the deployment script to access the storage account
-resource uami 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
+resource uami 'Microsoft.ManagedIdentity/userAssignedIdentities@2024-11-30' = {
   name: 'uami${suffix}'
   location: location
 }
