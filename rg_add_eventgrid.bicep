@@ -49,7 +49,7 @@ resource systemTopic 'Microsoft.EventGrid/systemTopics@2021-12-01' = {
 // Construct the resource ID to use for the event subscription
 var functionId = '${functionApp.id}/functions/eventGridTrigger'
 
-resource eventSubscription 'Microsoft.EventGrid/systemTopics/eventSubscriptions@2023-12-15-preview' = {
+resource eventSubscription 'Microsoft.EventGrid/systemTopics/eventSubscriptions@2025-02-15' = {
   parent: systemTopic
   name: 'blobscreated${suffix}'
   properties: {
