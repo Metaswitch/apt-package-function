@@ -141,7 +141,7 @@ var app_settings = use_shared_keys ? concat(common_settings, [
 ])
 
 // Create the function app.
-resource functionApp 'Microsoft.Web/sites@2023-01-01' = {
+resource functionApp 'Microsoft.Web/sites@2024-11-01' = {
   name: functionAppName
   dependsOn: [storageBlobDataContributorRoleAssignment]
   location: location
