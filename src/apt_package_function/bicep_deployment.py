@@ -2,7 +2,6 @@
 # Licensed under the MIT License.
 """Manages Bicep deployments."""
 
-
 import logging
 from pathlib import Path
 from typing import Any, Dict

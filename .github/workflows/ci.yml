@@ -20,7 +20,8 @@ jobs:
         poetry install
     - name: Analysing the code with mypy
       run: |
-        poetry run mypy $(git ls-files '*.py')
-    - name: Analysing the code with flake8
+        poetry run mypy
+    - name: Analysing the code with ruff
       run: |
-        poetry run flake8 .
+        poetry run ruff check
+        poetry run ruff format --check

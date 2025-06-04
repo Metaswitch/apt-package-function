@@ -1,0 +1,59 @@
+exclude = [
+    ".venv",
+    "__pycache__",
+    ".mypy_cache",
+    ".git"
+]
+
+# Match black
+line-length = 88
+indent-width = 4
+
+# Assume Python 3.9
+target-version = "py39"
+
+[lint]
+extend-select = [
+    "E",
+    "I",   # isort
+    "D",   # pydocstyle
+    "S",   # security
+    "ARG", # flake8-unused-arguments
+    "ANN", # flake8-annotations
+]
+
+ignore = [
+    "D203", # ignore incompatible rules
+    "D213", # ignore incompatible rules
+    "D400",
+    "D401",
+    "D415",
+    # Allow long lines if needed
+    "E501",
+    # We trust the uses of tar extractall as we generate the tar files ourselves.
+    "S202",
+    # Subprocess module imported. Warning to be careful only.
+    "S404",
+    # Yaml loader
+    "S506",
+    # Subprocess used without shell=True. Warning to be careful only.
+    "S603",
+    # Starting a process with a partial executable path
+    "S607",
+]
+
+[lint.extend-per-file-ignores]
+"tests/*" = ["S", "D"]
+
+[format]
+# Like Black, use double quotes for strings.
+quote-style = "double"
+
+# Like Black, indent with spaces, rather than tabs.
+indent-style = "space"
+
+# Like Black, respect magic trailing commas.
+skip-magic-trailing-comma = false
+
+# Like Black, automatically detect the appropriate line ending.
+line-ending = "auto"

@@ -9,6 +9,7 @@ import lzma
 import os
 import tempfile
 from pathlib import Path
+from typing import Generator
 
 import azure.functions as func
 import pydpkg
@@ -29,7 +30,7 @@ DEB_CHECK_KEY = "DebLastModified"
 
 
 @contextlib.contextmanager
-def temporary_filename():
+def temporary_filename() -> Generator[str, None, None]:
     """Create a temporary file and return the filename."""
     try:
         with tempfile.NamedTemporaryFile(delete=False) as f:
@@ -198,7 +199,7 @@ class RepoManager:
 
 @app.function_name(name="eventGridTrigger")
 @app.event_grid_trigger(arg_name="event")
-def event_grid_trigger(event: func.EventGridEvent):
+def event_grid_trigger(event: func.EventGridEvent) -> None:
     """Process an event grid trigger for a new blob in the container."""
     log.info("Processing event %s", event.id)
     rm = RepoManager()
