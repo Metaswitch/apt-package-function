@@ -39,7 +39,7 @@ var applicationInsightsName = appName
 resource uami 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' existing = {
   name: 'uami${suffix}'
 }
-resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' existing = {
+resource storageAccount 'Microsoft.Storage/storageAccounts@2024-01-01' existing = {
   name: storage_account_name
 }
 resource defBlobServices 'Microsoft.Storage/storageAccounts/blobServices@2024-01-01' existing = {
