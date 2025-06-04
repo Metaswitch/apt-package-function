@@ -36,7 +36,7 @@ var hostingPlanName = appName
 var applicationInsightsName = appName
 
 // Existing resources
-resource uami 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' existing = {
+resource uami 'Microsoft.ManagedIdentity/userAssignedIdentities@2024-11-30' existing = {
   name: 'uami${suffix}'
 }
 resource storageAccount 'Microsoft.Storage/storageAccounts@2024-01-01' existing = {
