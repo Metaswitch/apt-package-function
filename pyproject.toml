@@ -1,30 +1,38 @@
-[tool.poetry]
+[project]
 name = "apt-package-function"
-version = "0.1.0"
 description = "Functionality to create a Debian package repository in Azure Blob Storage"
-authors = ["Max Dymond <max.dymond@microsoft.com>"]
 license = "MIT"
+version = "0.1.0"
 readme = "README.md"
+authors = [{name = "Max Dymond", email = "max.dymond@alianza.com"}]
+requires-python = '>=3.9.2,<4.0.0'
+dependencies = [
+    'azure-functions (>=1.21.3,<2.0.0)',
+    'azure-identity (>=1.19.0,<2.0.0)',
+    'azure-storage-blob (>=12.23.1,<13.0.0)',
+    'pydpkg (>=1.9.3,<2.0.0)'
+]
 
-[tool.poetry.dependencies]
-python = "^3.8.2"
-azure-functions = "^1.21.3"
-azure-identity = "^1.19.0"
-azure-storage-blob = "^12.23.1"
-pydpkg = "^1.9.3"
+[project.scripts]
+create-resources = "apt_package_function.create_resources:run"
+
+[tool.poetry]
+requires-poetry = '>=2.0'
+
+[tool.poetry.requires-plugins]
+poetry-plugin-export = ">=1.8"
 
 [tool.poetry.group.dev.dependencies]
-mypy = "^1.14.1"
-flake8 = "^7.1.1"
-flake8-black = "^0.3.6"
-flake8-isort = "^6.1.1"
-flake8-docstrings = "^1.7.0"
-black = "^24.8.0"
+mypy = "^1"
+ruff = "^0.11.12"
 
 [build-system]
-requires = ["poetry-core"]
+requires = ['poetry-core (>=2.0)']
 build-backend = "poetry.core.masonry.api"
 
-[tool.poetry.scripts]
-# Script to create resources in Azure
-create-resources = "apt_package_function.create_resources:run"
+[tool.mypy]
+files = ["function_app.py", "src/apt_package_function"]
+
+[[tool.mypy.overrides]]
+module = ["pydpkg.*"]
+ignore_missing_imports = true
