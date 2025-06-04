@@ -31,7 +31,7 @@ resource packageContainer 'Microsoft.Storage/storageAccounts/blobServices/contai
   parent: defBlobServices
   name: package_container_name
 }
-resource functionApp 'Microsoft.Web/sites@2023-01-01' existing = {
+resource functionApp 'Microsoft.Web/sites@2024-11-01' existing = {
   name: appName
 }
 
