@@ -65,7 +65,7 @@ resource storageBlobDataContributorRoleAssignment 'Microsoft.Authorization/roleA
 }
 
 // Create a hosting plan for the function app
-resource hostingPlan 'Microsoft.Web/serverfarms@2023-01-01' = {
+resource hostingPlan 'Microsoft.Web/serverfarms@2024-11-01' = {
   name: hostingPlanName
   location: location
   sku: {
