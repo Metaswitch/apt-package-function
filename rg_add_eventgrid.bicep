@@ -23,7 +23,7 @@ var package_container_name = 'packages'
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' existing = {
   name: storage_account_name
 }
-resource defBlobServices 'Microsoft.Storage/storageAccounts/blobServices@2023-01-01' existing = {
+resource defBlobServices 'Microsoft.Storage/storageAccounts/blobServices@2024-01-01' existing = {
   parent: storageAccount
   name: 'default'
 }

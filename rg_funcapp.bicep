@@ -42,7 +42,7 @@ resource uami 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' exis
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' existing = {
   name: storage_account_name
 }
-resource defBlobServices 'Microsoft.Storage/storageAccounts/blobServices@2023-01-01' existing = {
+resource defBlobServices 'Microsoft.Storage/storageAccounts/blobServices@2024-01-01' existing = {
   parent: storageAccount
   name: 'default'
 }
