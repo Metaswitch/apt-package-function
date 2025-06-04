@@ -37,7 +37,7 @@ resource functionApp 'Microsoft.Web/sites@2024-11-01' existing = {
 
 // Now create an event grid subscription so that when a blob is created,
 // it triggers the function app
-resource systemTopic 'Microsoft.EventGrid/systemTopics@2021-12-01' = {
+resource systemTopic 'Microsoft.EventGrid/systemTopics@2025-02-15' = {
   name: 'blobscreated${suffix}'
   location: location
   properties: {
