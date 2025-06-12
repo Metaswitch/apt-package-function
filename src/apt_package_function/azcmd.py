@@ -20,7 +20,7 @@ class AzCmd:
         """Create an AzCmd object"""
         self.cmd = cmd
 
-    def _run_cmd(self, cmd: List[str]) -> Any:
+    def _run_cmd(self, cmd: List[str]) -> Any:  # noqa: ANN401
         """Runs a command and may return output"""
         raise NotImplementedError
 
@@ -62,7 +62,7 @@ class AzCmdJson(AzCmd):
 
     OUTPUT = "json"
 
-    def run(self) -> Any:
+    def run(self) -> Any:  # noqa: ANN401
         """Run the Azure CLI command and return the result."""
         data = self._az_cmd()
         return json.loads(data)

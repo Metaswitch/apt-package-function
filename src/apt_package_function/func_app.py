@@ -9,7 +9,8 @@ import tempfile
 import time
 from pathlib import Path
 from subprocess import CalledProcessError
-from typing import Any, Dict
+from types import TracebackType
+from typing import Any, Dict, Optional, Type
 from zipfile import ZipFile
 
 from apt_package_function.azcmd import AzCmdJson, AzCmdNone
@@ -63,14 +64,23 @@ class FuncApp:
 
             time.sleep(5)
 
-    def __enter__(self):
+    def __enter__(self) -> "FuncApp":
         """Return the object for use in a context manager."""
         return self
 
-    def __exit__(self, _exc_type, _exc_value, _traceback):
+    def __exit__(
+        self,
+        _exc_type: Optional[Type[BaseException]],
+        _exc_value: Optional[BaseException],
+        _exc_traceback: Optional[TracebackType],
+    ) -> None:
         """Clean up the object."""
         if self.output_path.exists():
             self.output_path.unlink()
+
+    def deploy(self) -> None:
+        """Deploy the function app code."""
+        raise NotImplementedError("Subclasses must implement deploy method")
 
 
 class FuncAppZip(FuncApp):
