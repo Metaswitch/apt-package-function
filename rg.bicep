@@ -53,7 +53,7 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2024-01-01' = {
 }
 
 // Create a container for the packages
-resource defBlobServices 'Microsoft.Storage/storageAccounts/blobServices@2024-01-01' = {
+resource defBlobServices 'Microsoft.Storage/storageAccounts/blobServices@2025-01-01' = {
   parent: storageAccount
   name: 'default'
 }
