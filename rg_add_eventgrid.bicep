@@ -20,7 +20,7 @@ param storage_account_name string = 'debianrepo${suffix}'
 var package_container_name = 'packages'
 
 // Define all existing resources
-resource storageAccount 'Microsoft.Storage/storageAccounts@2024-01-01' existing = {
+resource storageAccount 'Microsoft.Storage/storageAccounts@2025-01-01' existing = {
   name: storage_account_name
 }
 resource defBlobServices 'Microsoft.Storage/storageAccounts/blobServices@2024-01-01' existing = {
