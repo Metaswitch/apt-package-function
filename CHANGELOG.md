@@ -17,6 +17,11 @@ Status: Available for use
 
 ### Fixed
 
+## [1.0.0] - 2025-10-02
+
+### Breaking Changes
+- Switch to using FlexConsumption as Consumption apps are being deprecated.
+
 ## [0.1.0] - 2024-05-16
 
 ### Added
@@ -24,5 +29,6 @@ Status: Available for use
 
 ### Changed
 
-[unreleased]: https://github.com/microsoft/apt-package-function/compare/0.1.0...HEAD
-[0.1.0]: https://github.com/microsoft/apt-package-function/tree/0.1.0
+[unreleased]: https://github.com/Metaswitch/apt-package-function/compare/1.0.0...HEAD
+[1.0.0]: https://github.com/Metaswitch/apt-package-function/compare/0.1.0...1.0.0
+[0.1.0]: https://github.com/Metaswitch/apt-package-function/tree/0.1.0

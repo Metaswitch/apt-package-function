@@ -1,8 +1,10 @@
+# Copyright (c) Alianza, Inc. All rights reserved.
+# Highly Confidential Material
 [project]
 name = "apt-package-function"
 description = "Functionality to create a Debian package repository in Azure Blob Storage"
 license = "MIT"
-version = "0.1.0"
+version = "1.0.0"
 readme = "README.md"
 authors = [{name = "Max Dymond", email = "max.dymond@alianza.com"}]
 requires-python = '>=3.9.2,<4.0.0'
