@@ -27,6 +27,8 @@ var package_container_name = 'packages'
 // Create a container for the Python code
 var python_container_name = 'python'
 
+var storage_connection_string = 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storageAccount.listKeys().keys[0].value}'
+
 // The version of Python to run with
 var python_version = '3.11'
 
@@ -50,7 +52,7 @@ resource packageContainer 'Microsoft.Storage/storageAccounts/blobServices/contai
   parent: defBlobServices
   name: package_container_name
 }
-resource pythonContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2025-01-01' existing = if (!use_shared_keys) {
+resource pythonContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2025-01-01' existing = {
   parent: defBlobServices
   name: python_container_name
 }
@@ -108,15 +110,11 @@ var common_settings = [
 var app_settings = use_shared_keys ? concat(common_settings, [
   {
     name: 'AzureWebJobsStorage'
-    value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storageAccount.listKeys().keys[0].value}'
+    value: storage_connection_string
   }
   {
-    name: 'WEBSITE_CONTENTAZUREFILECONNECTIONSTRING'
-    value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storageAccount.listKeys().keys[0].value}'
-  }
-  {
-    name: 'WEBSITE_CONTENTSHARE'
-    value: toLower(functionAppName)
+    name: 'DEPLOYMENT_STORAGE_CONNECTION_STRING'
+    value: storage_connection_string
   }
 ]) : concat(common_settings, [
   {
@@ -134,13 +132,20 @@ var function_runtime = {
   version: python_version
 }
 
+var deployment_storage_value = 'https://${storageAccount.name}.blob.${environment().suffixes.storage}/${pythonContainer.name}'
+
+var deployment_authentication = use_shared_keys ? {
+  type: 'StorageAccountConnectionString'
+  storageAccountConnectionStringName: 'DEPLOYMENT_STORAGE_CONNECTION_STRING'
+} : {
+  type: 'SystemAssignedIdentity'
+}
+
 var flex_deployment_configuration = {
   storage: {
     type: 'blobContainer'
-    value: 'https://${storageAccount.name}.blob.${environment().suffixes.storage}/${pythonContainer.name}'
-    authentication: {
-      type: 'SystemAssignedIdentity'
-    }
+    value: deployment_storage_value
+    authentication: deployment_authentication
   }
 }
 
@@ -149,16 +154,11 @@ var flex_scale_and_concurrency = {
   instanceMemoryMB: 2048
 }
 
-// Define common app config
-var common_app_config = {
+var function_app_config = {
   runtime: function_runtime
   scaleAndConcurrency: flex_scale_and_concurrency
-}
-
-// For managed identity, add the deployment configuration, otherwise just use common config
-var function_app_config = use_shared_keys ? common_app_config : union(common_app_config, {
   deployment: flex_deployment_configuration
-})
+}
 
 // Create the function app.
 resource functionApp 'Microsoft.Web/sites@2024-11-01' = {

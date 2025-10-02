@@ -63,7 +63,7 @@ resource packageContainer 'Microsoft.Storage/storageAccounts/blobServices/contai
   properties: {
   }
 }
-resource pythonContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2025-01-01' = if (!use_shared_keys) {
+resource pythonContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2025-01-01' = {
   parent: defBlobServices
   name: python_container_name
   properties: {
@@ -139,4 +139,4 @@ output apt_sources string = 'deb [trusted=yes] blob://${storageAccount.name}.blo
 output function_app_name string = appName
 output storage_account string = storageAccount.name
 output package_container string = packageContainer.name
-output python_container string = use_shared_keys ? '' : pythonContainer.name
+output python_container string = pythonContainer.name
