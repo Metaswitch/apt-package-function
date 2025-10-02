@@ -149,13 +149,14 @@ var flex_scale_and_concurrency = {
   instanceMemoryMB: 2048
 }
 
-var function_app_config = use_shared_keys ? {
+// Define common app config
+var common_app_config = {
   runtime: function_runtime
   scaleAndConcurrency: flex_scale_and_concurrency
-} : union({
-  runtime: function_runtime
-  scaleAndConcurrency: flex_scale_and_concurrency
-}, {
+}
+
+// For managed identity, add the deployment configuration, otherwise just use common config
+var function_app_config = use_shared_keys ? common_app_config : union(common_app_config, {
   deployment: flex_deployment_configuration
 })
 
