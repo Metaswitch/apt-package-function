@@ -1,3 +1,4 @@
+# Copyright (c) Alianza, Inc. All rights reserved.
 exclude = [
     ".venv",
     "__pycache__",

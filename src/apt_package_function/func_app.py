@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Alianza, Inc. All rights reserved.
 # Licensed under the MIT License.
 """Management of function applications"""
 
@@ -10,11 +10,10 @@ import time
 from pathlib import Path
 from subprocess import CalledProcessError
 from types import TracebackType
-from typing import Any, Dict, Optional, Type
+from typing import Optional, Type
 from zipfile import ZipFile
 
 from apt_package_function.azcmd import AzCmdJson, AzCmdNone
-from apt_package_function.bicep_deployment import BicepDeployment
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
@@ -128,34 +127,27 @@ class FuncAppZip(FuncApp):
 
 
 class FuncAppBundle(FuncApp):
-    """Bundles the function app using the core-tools tooling."""
+    """Publishes the function app using the core-tools tooling."""
 
-    def __init__(
-        self,
-        name: str,
-        resource_group: str,
-        storage_account: str,
-        python_container: str,
-        parameters: Dict[str, Any],
-    ) -> None:
+    def __init__(self, name: str, resource_group: str) -> None:
         """Create a FuncAppBundle object."""
-        # The function app bundle gets created as function_app.zip
         super().__init__(name, resource_group, Path("function_app.zip"))
-        self.storage_account = storage_account
-        self.python_container = python_container
-        self.parameters = parameters
 
+    def deploy(self) -> None:
+        """Deploy the function application."""
+        log.info("Deploying function app code")
         cwd = Path.cwd()
+        home = Path.home()
+        azure_config = home / ".azure"
 
-        # Pack the application using the core-tools tooling
-        # Should generate a file called function_app.zip
+        # Publish the application using the core-tools tooling
         cmd = [
             "docker",
             "run",
             "-it",
             "--rm",
             "-v",
-            "/var/run/docker.sock:/var/run/docker.sock",
+            f"{azure_config}:/root/.azure",
             "-v",
             f"{cwd}:/function_app",
             "-w",
@@ -163,46 +155,8 @@ class FuncAppBundle(FuncApp):
             "mcr.microsoft.com/azure-functions/python:4-python3.11-core-tools",
             "bash",
             "-c",
-            "func pack --python --build-native-deps",
+            f"func azure functionapp publish {self.name} --python --build remote",
         ]
         log.debug("Running %s", cmd)
         subprocess.run(cmd, check=True)
-
-    def deploy(self) -> None:
-        """Deploy the function application."""
-        log.info("Copying function app code to %s", self.python_container)
-        cmd = AzCmdNone(
-            [
-                "az",
-                "storage",
-                "blob",
-                "upload",
-                "--auth-mode",
-                "login",
-                "--account-name",
-                self.storage_account,
-                "--container-name",
-                self.python_container,
-                "--file",
-                str(self.output_path),
-                "--name",
-                str(self.output_path),
-                "--overwrite",
-            ]
-        )
-        cmd.run()
-
-        # Create the function app
-        func_app_params = {
-            "use_shared_keys": False,
-        }
-        func_app_params.update(self.parameters)
-
-        func_app_deploy = BicepDeployment(
-            deployment_name=f"deploy_{self.name}",
-            resource_group_name=self.resource_group,
-            template_file=Path("rg_funcapp.bicep"),
-            parameters=func_app_params,
-            description="function app",
-        )
-        func_app_deploy.create()
+        log.info("Function app code published to %s", self.name)

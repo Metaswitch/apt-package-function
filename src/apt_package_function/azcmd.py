@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Alianza, Inc. All rights reserved.
 # Licensed under the MIT License.
 """Functions for interacting with az cli"""
 

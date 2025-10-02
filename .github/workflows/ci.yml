@@ -1,3 +1,4 @@
+# Copyright (c) Alianza, Inc. All rights reserved.
 name: Lint
 
 on: [push]

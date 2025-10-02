@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Alianza, Inc. All rights reserved.
 # Licensed under the MIT License.
 """Creates resources for the apt package function in Azure."""
 
@@ -10,7 +10,11 @@ from pathlib import Path
 
 from apt_package_function import common_logging
 from apt_package_function.bicep_deployment import BicepDeployment
-from apt_package_function.func_app import FuncApp, FuncAppBundle, FuncAppZip
+from apt_package_function.func_app import (
+    FuncApp,
+    FuncAppBundle,
+    FuncAppZip,
+)
 from apt_package_function.poetry import extract_requirements
 from apt_package_function.resource_group import create_rg
 
@@ -78,7 +82,6 @@ def main() -> None:
     apt_sources = outputs["apt_sources"]
     function_app_name = outputs["function_app_name"]
     package_container = outputs["package_container"]
-    python_container = outputs["python_container"]
     storage_account = outputs["storage_account"]
 
     # Create the function app
@@ -87,11 +90,7 @@ def main() -> None:
         funcapp = FuncAppZip(name=function_app_name, resource_group=args.resource_group)
     else:
         funcapp = FuncAppBundle(
-            name=function_app_name,
-            resource_group=args.resource_group,
-            storage_account=storage_account,
-            python_container=python_container,
-            parameters=common_parameters,
+            name=function_app_name, resource_group=args.resource_group
         )
 
     with funcapp as cm:

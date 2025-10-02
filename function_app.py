@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Alianza, Inc. All rights reserved.
 # Licensed under the MIT License.
 """A function app to manage a Debian repository in Azure Blob Storage."""
 
@@ -9,7 +9,7 @@ import lzma
 import os
 import tempfile
 from pathlib import Path
-from typing import Generator
+from typing import Generator, Optional
 
 import azure.functions as func
 import pydpkg
@@ -32,12 +32,14 @@ DEB_CHECK_KEY = "DebLastModified"
 @contextlib.contextmanager
 def temporary_filename() -> Generator[str, None, None]:
     """Create a temporary file and return the filename."""
+    temporary_name: Optional[str] = None
     try:
         with tempfile.NamedTemporaryFile(delete=False) as f:
             temporary_name = f.name
         yield temporary_name
     finally:
-        os.unlink(temporary_name)
+        if temporary_name:
+            os.unlink(temporary_name)
 
 
 class PackageBlob:

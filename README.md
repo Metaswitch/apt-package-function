@@ -2,7 +2,7 @@
 
 Functionality to create a Debian package repository in Azure Blob Storage with
 an Azure Function App to keep it up to date. For use with
-[apt-transport-blob](https://github.com/microsoft/apt-transport-blob).
+[apt-transport-blob](https://github.com/Metaswitch/apt-transport-blob).
 
 # Getting Started
 

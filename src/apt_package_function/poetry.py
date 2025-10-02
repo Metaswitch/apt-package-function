@@ -1,4 +1,4 @@
-# Copyright (c) Microsoft Corporation.
+# Copyright (c) Alianza, Inc. All rights reserved.
 # Licensed under the MIT License.
 """Extracts requirements from a poetry project."""
 

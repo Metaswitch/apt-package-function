@@ -65,12 +65,14 @@ resource storageBlobDataContributorRoleAssignment 'Microsoft.Authorization/roleA
 }
 
 // Create a hosting plan for the function app
+// Using Flex Consumption plan for serverless hosting with enhanced features
+// Reference: https://learn.microsoft.com/en-us/azure/azure-functions/flex-consumption-plan
 resource hostingPlan 'Microsoft.Web/serverfarms@2024-11-01' = {
   name: hostingPlanName
   location: location
   sku: {
-    name: 'Y1'
-    tier: 'Dynamic'
+    name: 'FC1'
+    tier: 'FlexConsumption'
   }
   properties: {
     reserved: true
@@ -91,16 +93,8 @@ resource applicationInsights 'Microsoft.Insights/components@2020-02-02' = {
 // Construct the app settings
 var common_settings = [
   {
-    name: 'FUNCTIONS_EXTENSION_VERSION'
-    value: '~4'
-  }
-  {
     name: 'APPINSIGHTS_INSTRUMENTATIONKEY'
     value: applicationInsights.properties.InstrumentationKey
-  }
-  {
-    name: 'FUNCTIONS_WORKER_RUNTIME'
-    value: 'python'
   }
   // Pass the blob container name to the function app - this is the
   // container which is monitored for new packages.
@@ -130,15 +124,40 @@ var app_settings = use_shared_keys ? concat(common_settings, [
     value: storageAccount.name
   }
   {
-    name: 'WEBSITE_RUN_FROM_PACKAGE'
-    value: 'https://${storageAccount.name}.blob.${environment().suffixes.storage}/${pythonContainer.name}/function_app.zip'
-  }
-  // Pass the container URL to the function app for the `from_container_url` call.
-  {
     name: 'BLOB_CONTAINER_URL'
       value: 'https://${storageAccount.name}.blob.${environment().suffixes.storage}/${packageContainer.name}/'
   }
 ])
+
+var function_runtime = {
+  name: 'python'
+  version: python_version
+}
+
+var flex_deployment_configuration = {
+  storage: {
+    type: 'blobContainer'
+    value: 'https://${storageAccount.name}.blob.${environment().suffixes.storage}/${pythonContainer.name}'
+    authentication: {
+      type: 'SystemAssignedIdentity'
+    }
+  }
+}
+
+var flex_scale_and_concurrency = {
+  maximumInstanceCount: 100
+  instanceMemoryMB: 2048
+}
+
+var function_app_config = use_shared_keys ? {
+  runtime: function_runtime
+  scaleAndConcurrency: flex_scale_and_concurrency
+} : union({
+  runtime: function_runtime
+  scaleAndConcurrency: flex_scale_and_concurrency
+}, {
+  deployment: flex_deployment_configuration
+})
 
 // Create the function app.
 resource functionApp 'Microsoft.Web/sites@2024-11-01' = {
@@ -152,13 +171,12 @@ resource functionApp 'Microsoft.Web/sites@2024-11-01' = {
   properties: {
     serverFarmId: hostingPlan.id
     siteConfig: {
-      linuxFxVersion: 'Python|${python_version}'
-      pythonVersion: python_version
       appSettings: app_settings
       ftpsState: 'FtpsOnly'
       minTlsVersion: '1.2'
     }
     httpsOnly: true
+    functionAppConfig: function_app_config
   }
 }
 
