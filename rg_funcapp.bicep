@@ -69,7 +69,7 @@ resource storageBlobDataContributorRoleAssignment 'Microsoft.Authorization/roleA
 // Create a hosting plan for the function app
 // Using Flex Consumption plan for serverless hosting with enhanced features
 // Reference: https://learn.microsoft.com/en-us/azure/azure-functions/flex-consumption-plan
-resource hostingPlan 'Microsoft.Web/serverfarms@2024-11-01' = {
+resource hostingPlan 'Microsoft.Web/serverfarms@2025-03-01' = {
   name: hostingPlanName
   location: location
   sku: {
