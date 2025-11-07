@@ -161,7 +161,7 @@ var function_app_config = {
 }
 
 // Create the function app.
-resource functionApp 'Microsoft.Web/sites@2024-11-01' = {
+resource functionApp 'Microsoft.Web/sites@2025-03-01' = {
   name: functionAppName
   dependsOn: [storageBlobDataContributorRoleAssignment]
   location: location
