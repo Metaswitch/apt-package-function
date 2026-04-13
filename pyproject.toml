@@ -9,7 +9,7 @@ readme = "README.md"
 authors = [{name = "Max Dymond", email = "max.dymond@alianza.com"}]
 requires-python = '>=3.9.2,<4.0.0'
 dependencies = [
-    'azure-functions (>=1.21.3,<2.0.0)',
+    'azure-functions (>=2.1.0,<2.2.0)',
     'azure-identity (>=1.19.0,<2.0.0)',
     'azure-storage-blob (>=12.23.1,<13.0.0)',
     'pydpkg (>=1.9.3,<2.0.0)'
