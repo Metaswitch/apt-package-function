@@ -57,13 +57,13 @@ resource defBlobServices 'Microsoft.Storage/storageAccounts/blobServices@2025-06
   parent: storageAccount
   name: 'default'
 }
-resource packageContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2025-06-01' = {
+resource packageContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2025-08-01' = {
   parent: defBlobServices
   name: package_container_name
   properties: {
   }
 }
-resource pythonContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2025-06-01' = {
+resource pythonContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2025-08-01' = {
   parent: defBlobServices
   name: python_container_name
   properties: {
