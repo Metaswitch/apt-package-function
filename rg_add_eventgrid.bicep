@@ -27,7 +27,7 @@ resource defBlobServices 'Microsoft.Storage/storageAccounts/blobServices@2025-06
   parent: storageAccount
   name: 'default'
 }
-resource packageContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2025-01-01' existing = {
+resource packageContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2025-06-01' existing = {
   parent: defBlobServices
   name: package_container_name
 }
