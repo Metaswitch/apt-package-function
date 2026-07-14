@@ -42,13 +42,17 @@ def main() -> None:
         "--suffix",
         help="Unique suffix for the repository name. If not provided, a random suffix will be generated. Must be 14 characters or fewer.",
     )
+    parser.add_argument(
+        "--subscription",
+        help="The subscription to create resources in. If not provided, the active 'az' subscription is used.",
+    )
     args = parser.parse_args()
 
     if args.suffix and len(args.suffix) > 14:
         raise ValueError("Suffix must be 14 characters or fewer.")
 
     # Create the resource group
-    create_rg(args.resource_group, args.location)
+    create_rg(args.resource_group, args.location, subscription=args.subscription)
 
     # Ensure requirements.txt exists
     extract_requirements(Path("requirements.txt"))
@@ -74,6 +78,7 @@ def main() -> None:
         template_file=Path("rg.bicep"),
         parameters=initial_parameters,
         description="initial resources",
+        subscription=args.subscription,
     )
     initial_resources.create()
 
@@ -87,10 +92,16 @@ def main() -> None:
     # Create the function app
     funcapp: FuncApp
     if not args.no_shared_keys:
-        funcapp = FuncAppZip(name=function_app_name, resource_group=args.resource_group)
+        funcapp = FuncAppZip(
+            name=function_app_name,
+            resource_group=args.resource_group,
+            subscription=args.subscription,
+        )
     else:
         funcapp = FuncAppBundle(
-            name=function_app_name, resource_group=args.resource_group
+            name=function_app_name,
+            resource_group=args.resource_group,
+            subscription=args.subscription,
         )
 
     with funcapp as cm:
@@ -105,6 +116,7 @@ def main() -> None:
         template_file=Path("rg_add_eventgrid.bicep"),
         parameters=common_parameters,
         description="Event Grid trigger configuration",
+        subscription=args.subscription,
     )
     event_grid_deployment.create()
 
