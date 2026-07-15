@@ -3,6 +3,8 @@
 """Manages Bicep deployments."""
 
 import logging
+import tempfile
+from contextlib import ExitStack
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -23,13 +25,21 @@ class BicepDeployment:
         parameters: Dict[str, Any],
         description: str,
         subscription: Optional[str] = None,
+        secure_parameters: Optional[Dict[str, str]] = None,
     ) -> None:
-        """Create a BicepDeployment object."""
+        """Create a BicepDeployment object.
+
+        secure_parameters are values (e.g. a private key) that must not appear
+        on the command line or in logs. Each is passed to 'az' via the
+        'key=@file' syntax so the value is read from a temporary file rather
+        than argv, and is never logged.
+        """
         self.deployment_name = deployment_name
         self.resource_group_name = resource_group_name
         self.template_file = template_file
         self.description = description
         self.subscription = subscription
+        self.secure_parameters = secure_parameters or {}
 
         # Convert the set of parameters to a list of flags
         self.parameters = []
@@ -38,28 +48,41 @@ class BicepDeployment:
 
     def create(self) -> None:
         """Create the deployment."""
-        cmd = AzCmdNone(
-            [
-                "az",
-                "deployment",
-                "group",
-                "create",
-                "--name",
-                self.deployment_name,
-                "--resource-group",
+        with ExitStack() as stack:
+            # Write each secure parameter to a temporary file and reference it
+            # with 'key=@file' so the value never appears in argv or logs.
+            secure_flags = []
+            for key, value in self.secure_parameters.items():
+                tmp = stack.enter_context(
+                    tempfile.NamedTemporaryFile("w", suffix=".param", encoding="utf-8")
+                )
+                tmp.write(value)
+                tmp.flush()
+                secure_flags.extend(["--parameter", f"{key}=@{tmp.name}"])
+
+            cmd = AzCmdNone(
+                [
+                    "az",
+                    "deployment",
+                    "group",
+                    "create",
+                    "--name",
+                    self.deployment_name,
+                    "--resource-group",
+                    self.resource_group_name,
+                    "--template-file",
+                    str(self.template_file),
+                    *self.parameters,
+                    *secure_flags,
+                ],
+                subscription=self.subscription,
+            )
+            log.info(
+                "Deploying: %s (in resource group: %s)",
+                self.description,
                 self.resource_group_name,
-                "--template-file",
-                str(self.template_file),
-                *self.parameters,
-            ],
-            subscription=self.subscription,
-        )
-        log.info(
-            "Deploying: %s (in resource group: %s)",
-            self.description,
-            self.resource_group_name,
-        )
-        cmd.run()
+            )
+            cmd.run()
         log.info("Finished deploying %s", self.description)
 
     def outputs(self) -> Dict[str, Any]:

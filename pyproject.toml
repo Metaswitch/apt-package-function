@@ -12,7 +12,11 @@ dependencies = [
     'azure-functions (>=1.21.3,<2.0.0)',
     'azure-identity (>=1.19.0,<2.0.0)',
     'azure-storage-blob (>=12.23.1,<13.0.0)',
-    'pydpkg (>=1.9.3,<2.0.0)'
+    'pydpkg (>=1.9.3,<2.0.0)',
+    # PGPy13 is a maintained fork of PGPy (stale since 2022) patched for
+    # Python 3.13+. Imports as 'pgpy'. Already pulled in transitively by pydpkg;
+    # declared explicitly here because we import it directly for Release signing.
+    'pgpy13 (>=0.6.1rc1,<0.7.0)'
 ]
 
 [project.scripts]
@@ -36,5 +40,5 @@ build-backend = "poetry.core.masonry.api"
 files = ["function_app.py", "src/apt_package_function"]
 
 [[tool.mypy.overrides]]
-module = ["pydpkg.*"]
+module = ["pydpkg.*", "pgpy.*"]
 ignore_missing_imports = true

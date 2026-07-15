@@ -64,6 +64,38 @@ This creates an additional blob container (`python`) in the storage account to
 hold the compiled function application zip file; the function application is
 run directly from that zip file.
 
+## Signing the repository
+
+By default the repository is unsigned and clients trust it via `[trusted=yes]`.
+You can instead have the function sign the repository's `Release` file with a
+GPG key, so clients verify it against a public key.
+
+Either bring your own ASCII-armored private key:
+
+```bash
+poetry run create-resources --gpg-key ./my-signing-key.asc <resource_group_name>
+```
+
+or have one generated for you:
+
+```bash
+poetry run create-resources --autogenerate-gpg-key <resource_group_name>
+```
+
+When signing is enabled:
+
+- The private key is stored in an Azure Key Vault. The function app reads it via
+  a Key Vault reference resolved by its managed identity — the key value never
+  appears in the app's configuration.
+- The public key is published to the package container as `public-key.asc`.
+- The function generates and signs `Release` (producing `InRelease` and
+  `Release.gpg`) each time the repository is regenerated.
+
+On the client, install the public key into `/etc/apt/keyrings/` and reference it
+from the sources line (`create-resources` prints the exact commands, including
+the `deb [signed-by=…]` line, on success). The bring-your-own key must be
+exported **without** a passphrase so the function can sign non-interactively.
+
 # Design
 
 The function app works as follows:
@@ -79,6 +111,9 @@ The function app works as follows:
 - All `.package` files are iterated over, downloaded, and combined into a
   single `Package` file, which is then uploaded. A `Packages.xz` file is also
   created.
+- If signing is enabled, a `Release` file is generated (with MD5/SHA1/SHA256
+  digests of the `Packages` files) and signed, producing `InRelease` (inline
+  signature) and `Release.gpg` (detached signature).
 
 ## Speed of repository update
 
