@@ -76,7 +76,9 @@ def main() -> None:
     if args.gpg_key:
         gpg_private_key = load_private_key(args.gpg_key)
     elif args.autogenerate_gpg_key:
-        gpg_private_key = generate_private_key(f"apt-package-function {args.resource_group}")
+        gpg_private_key = generate_private_key(
+            f"apt-package-function {args.resource_group}"
+        )
     if gpg_private_key:
         gpg_public_key = public_key_from_private(gpg_private_key)
 
@@ -132,9 +134,7 @@ def main() -> None:
     # Build the apt sources line. When signing is enabled apt verifies against
     # the published public key; otherwise the repository is trusted blindly.
     keyring = f"/etc/apt/keyrings/{storage_account}.asc"
-    repo_url = (
-        f"blob://{storage_account}.blob.core.windows.net/{package_container} /"
-    )
+    repo_url = f"blob://{storage_account}.blob.core.windows.net/{package_container} /"
     options = f"signed-by={keyring}" if signing_enabled else "trusted=yes"
     apt_sources = f"deb [{options}] {repo_url}"
 

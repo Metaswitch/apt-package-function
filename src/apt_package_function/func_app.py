@@ -165,7 +165,7 @@ class FuncAppBundle(FuncApp):
 
         # Pass the token via the environment so it never appears in the logged
         # command line or the container's process arguments.
-        func_cmd = f"func azure functionapp publish {self.name} --python --build remote --access-token \"$FUNC_ACCESS_TOKEN\""
+        func_cmd = f'func azure functionapp publish {self.name} --python --build remote --access-token "$FUNC_ACCESS_TOKEN"'
         if self.subscription:
             func_cmd += f" --subscription {self.subscription}"
 
