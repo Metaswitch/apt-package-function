@@ -25,7 +25,7 @@ requires-poetry = '>=2.0'
 poetry-plugin-export = ">=1.8"
 
 [tool.poetry.group.dev.dependencies]
-mypy = "^1"
+mypy = "^2.0.0"
 ruff = "^0.15.0"
 
 [build-system]
