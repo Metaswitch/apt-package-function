@@ -169,7 +169,13 @@ class FuncAppBundle(FuncApp):
         if self.subscription:
             func_cmd += f" --subscription {self.subscription}"
 
-        # Publish the application using the core-tools tooling
+        # Publish the application using the core-tools tooling.
+        #
+        # The image's Python version need not match the app runtime: with
+        # '--build remote' the build runs on Azure (Oryx) at the target
+        # runtime, and this image only packages and uploads. 3.11 is the newest
+        # published core-tools image (no 3.12/3.13 exists), and it deploys
+        # 3.13 apps fine.
         cmd = [
             "docker",
             "run",

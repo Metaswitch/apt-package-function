@@ -39,7 +39,7 @@ var python_container_name = 'python'
 var storage_connection_string = 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};EndpointSuffix=${environment().suffixes.storage};AccountKey=${storageAccount.listKeys().keys[0].value}'
 
 // The version of Python to run with
-var python_version = '3.11'
+var python_version = '3.13'
 
 // The name of the hosting plan, application insights, and function app
 var functionAppName = appName
