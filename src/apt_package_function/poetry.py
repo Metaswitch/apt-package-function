@@ -19,6 +19,9 @@ def extract_requirements(requirements_path: Path) -> None:
         "requirements.txt",
         "--output",
         str(requirements_path),
+        # Hashes flip pip into --require-hashes mode, which the Flex Consumption
+        # remote (Oryx) build rejects for poetry's multi-marker entries.
+        "--without-hashes",
     ]
     log.debug("Running %s", cmd)
     subprocess.run(cmd, check=True)

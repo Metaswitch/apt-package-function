@@ -5,7 +5,7 @@
 import json
 import logging
 import subprocess
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
@@ -16,9 +16,11 @@ class AzCmd:
 
     OUTPUT: str
 
-    def __init__(self, cmd: List[str]) -> None:
+    def __init__(self, cmd: List[str], subscription: Optional[str] = None) -> None:
         """Create an AzCmd object"""
         self.cmd = cmd
+        if subscription:
+            self.cmd = [*cmd, "--subscription", subscription]
 
     def _run_cmd(self, cmd: List[str]) -> Any:  # noqa: ANN401
         """Runs a command and may return output"""

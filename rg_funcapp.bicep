@@ -16,6 +16,15 @@ param appName string = 'debfnapp${suffix}'
 @description('Using shared keys or managed identity')
 param use_shared_keys bool = true
 
+@description('Enable GPG signing of the repository Release file')
+param signing_enabled bool = false
+
+@description('The name of the Key Vault holding the GPG private key')
+param key_vault_name string = ''
+
+@description('The Key Vault secret name (not value) holding the GPG private key')
+param gpg_key_name string = ''
+
 // Storage account names must be between 3 and 24 characters, and unique, so
 // generate a unique name.
 @description('The name of the storage account to use')
@@ -127,6 +136,18 @@ var app_settings = use_shared_keys ? concat(common_settings, [
   }
 ])
 
+// When signing is enabled, surface the GPG private key to the function via a
+// Key Vault reference. The platform resolves this using the function app's
+// managed identity (granted 'Key Vault Secrets User' below); the secret value
+// never appears in app configuration.
+var signing_settings = signing_enabled ? [
+  {
+    name: 'GPG_PRIVATE_KEY'
+    value: '@Microsoft.KeyVault(VaultName=${key_vault_name};SecretName=${gpg_key_name})'
+  }
+] : []
+var final_app_settings = concat(app_settings, signing_settings)
+
 var function_runtime = {
   name: 'python'
   version: python_version
@@ -172,7 +193,7 @@ resource functionApp 'Microsoft.Web/sites@2024-11-01' = {
   properties: {
     serverFarmId: hostingPlan.id
     siteConfig: {
-      appSettings: app_settings
+      appSettings: final_app_settings
       ftpsState: 'FtpsOnly'
       minTlsVersion: '1.2'
     }
@@ -189,6 +210,26 @@ resource funcAppRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (
   properties: {
     principalId: functionApp.identity.principalId
     roleDefinitionId: storageBlobDataContributor.id
+    principalType: 'ServicePrincipal'
+  }
+}
+
+// When signing is enabled, grant the function app's managed identity read
+// access to the Key Vault so the GPG_PRIVATE_KEY Key Vault reference resolves.
+resource keyVault 'Microsoft.KeyVault/vaults@2024-11-01' existing = if (signing_enabled) {
+  name: key_vault_name
+}
+@description('Built-in Key Vault Secrets User role. See https://learn.microsoft.com/en-gb/azure/role-based-access-control/built-in-roles#key-vault-secrets-user')
+resource keyVaultSecretsUser 'Microsoft.Authorization/roleDefinitions@2022-04-01' existing = {
+  scope: subscription()
+  name: '4633458b-17de-408a-b874-0445c86b69e6'
+}
+resource funcAppKvRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (signing_enabled) {
+  name: guid(key_vault_name, functionApp.id, keyVaultSecretsUser.id)
+  scope: keyVault
+  properties: {
+    principalId: functionApp.identity.principalId
+    roleDefinitionId: keyVaultSecretsUser.id
     principalType: 'ServicePrincipal'
   }
 }

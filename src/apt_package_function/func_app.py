@@ -4,6 +4,7 @@
 
 import json
 import logging
+import os
 import subprocess
 import tempfile
 import time
@@ -22,11 +23,18 @@ log.addHandler(logging.NullHandler())
 class FuncApp:
     """Basic class for managing function apps."""
 
-    def __init__(self, name: str, resource_group: str, output_path: Path) -> None:
+    def __init__(
+        self,
+        name: str,
+        resource_group: str,
+        output_path: Path,
+        subscription: Optional[str] = None,
+    ) -> None:
         """Create a FuncApp object."""
         self.name = name
         self.resource_group = resource_group
         self.output_path = output_path
+        self.subscription = subscription
 
     def wait_for_event_trigger(self) -> None:
         """Wait until the function app has an eventGridTrigger function."""
@@ -42,7 +50,8 @@ class FuncApp:
                 self.resource_group,
                 "--query",
                 "[].name",
-            ]
+            ],
+            subscription=self.subscription,
         )
         log.info("Awaiting event trigger on function app %s", self.name)
 
@@ -85,10 +94,14 @@ class FuncApp:
 class FuncAppZip(FuncApp):
     """Class for managing zipped function apps."""
 
-    def __init__(self, name: str, resource_group: str) -> None:
+    def __init__(
+        self, name: str, resource_group: str, subscription: Optional[str] = None
+    ) -> None:
         """Create a FuncAppZip object."""
         self.tempfile = tempfile.NamedTemporaryFile(suffix=".zip", delete=False)
-        super().__init__(name, resource_group, Path(self.tempfile.name))
+        super().__init__(
+            name, resource_group, Path(self.tempfile.name), subscription=subscription
+        )
 
         self.zip_paths = [
             Path("host.json"),
@@ -119,7 +132,8 @@ class FuncAppZip(FuncApp):
                 str(self.output_path),
                 "--build-remote",
                 "true",
-            ]
+            ],
+            subscription=self.subscription,
         )
         log.info("Deploying function app code to %s", self.name)
         cmd.run()
@@ -129,25 +143,39 @@ class FuncAppZip(FuncApp):
 class FuncAppBundle(FuncApp):
     """Publishes the function app using the core-tools tooling."""
 
-    def __init__(self, name: str, resource_group: str) -> None:
+    def __init__(
+        self, name: str, resource_group: str, subscription: Optional[str] = None
+    ) -> None:
         """Create a FuncAppBundle object."""
-        super().__init__(name, resource_group, Path("function_app.zip"))
+        super().__init__(
+            name, resource_group, Path("function_app.zip"), subscription=subscription
+        )
 
     def deploy(self) -> None:
         """Deploy the function application."""
         log.info("Deploying function app code")
         cwd = Path.cwd()
-        home = Path.home()
-        azure_config = home / ".azure"
+
+        # Mint an access token on the host: the host 'az' can read its own
+        # credential cache, whereas the (older) 'az' inside the core-tools image
+        # cannot deserialise a cache written by a newer host 'az'. So instead of
+        # mounting ~/.azure into the container, pass a token to 'func' directly.
+        token_cmd = ["az", "account", "get-access-token", "--query", "accessToken"]
+        token = AzCmdJson(token_cmd, subscription=self.subscription).run()
+
+        # Pass the token via the environment so it never appears in the logged
+        # command line or the container's process arguments.
+        func_cmd = f'func azure functionapp publish {self.name} --python --build remote --access-token "$FUNC_ACCESS_TOKEN"'
+        if self.subscription:
+            func_cmd += f" --subscription {self.subscription}"
 
         # Publish the application using the core-tools tooling
         cmd = [
             "docker",
             "run",
-            "-it",
             "--rm",
-            "-v",
-            f"{azure_config}:/root/.azure",
+            "-e",
+            "FUNC_ACCESS_TOKEN",
             "-v",
             f"{cwd}:/function_app",
             "-w",
@@ -155,8 +183,8 @@ class FuncAppBundle(FuncApp):
             "mcr.microsoft.com/azure-functions/python:4-python3.11-core-tools",
             "bash",
             "-c",
-            f"func azure functionapp publish {self.name} --python --build remote",
+            func_cmd,
         ]
         log.debug("Running %s", cmd)
-        subprocess.run(cmd, check=True)
+        subprocess.run(cmd, check=True, env={**os.environ, "FUNC_ACCESS_TOKEN": token})
         log.info("Function app code published to %s", self.name)

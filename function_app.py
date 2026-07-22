@@ -3,11 +3,13 @@
 """A function app to manage a Debian repository in Azure Blob Storage."""
 
 import contextlib
+import hashlib
 import io
 import logging
 import lzma
 import os
 import tempfile
+from email.utils import formatdate
 from pathlib import Path
 from typing import Generator, Optional
 
@@ -27,6 +29,10 @@ logging.getLogger("azure.core.pipeline.policies.http_logging_policy").setLevel(
 
 CONTAINER_NAME = os.environ["BLOB_CONTAINER"]
 DEB_CHECK_KEY = "DebLastModified"
+
+# Signing is enabled iff a GPG private key is provided (via a Key Vault
+# reference app setting). When set, the repository Release file is signed.
+GPG_PRIVATE_KEY = os.environ.get("GPG_PRIVATE_KEY")
 
 
 @contextlib.contextmanager
@@ -197,6 +203,66 @@ class RepoManager:
         compressed_data = lzma.compress(packages_bytes)
         self.package_file_xz.upload_blob(compressed_data, overwrite=True)
         log.info("Created Packages.xz file")
+
+        # If signing is enabled, generate and sign a Release file over the
+        # Packages files we just produced.
+        if GPG_PRIVATE_KEY:
+            self.create_release(
+                {"Packages": packages_bytes, "Packages.xz": compressed_data},
+                GPG_PRIVATE_KEY,
+            )
+
+    def create_release(self, files: dict, armored_private_key: str) -> None:
+        """Build, sign and upload the Release / InRelease / Release.gpg files."""
+        release = build_release(files)
+        inrelease, release_gpg = sign_release(release, armored_private_key)
+
+        for name, data in (
+            ("Release", release),
+            ("InRelease", inrelease),
+            ("Release.gpg", release_gpg),
+        ):
+            self.container_client.get_blob_client(name).upload_blob(
+                data, overwrite=True
+            )
+            log.info("Created %s file", name)
+
+
+def build_release(files: dict) -> str:
+    """Build a flat-repository Release file over the given {name: bytes}.
+
+    Includes size and MD5/SHA1/SHA256 digests for each file, as apt requires.
+    """
+    lines = [
+        "Origin: apt-package-function",
+        "Label: apt-package-function",
+        f"Date: {formatdate(usegmt=True)}",
+    ]
+    for algo_name, algo in (("MD5Sum", "md5"), ("SHA1", "sha1"), ("SHA256", "sha256")):
+        lines.append(f"{algo_name}:")
+        for name, data in files.items():
+            digest = hashlib.new(algo, data).hexdigest()
+            lines.append(f" {digest} {len(data)} {name}")
+    return "\n".join(lines) + "\n"
+
+
+def sign_release(release: str, armored_private_key: str) -> tuple:
+    """Sign a Release file, returning (InRelease bytes, Release.gpg bytes).
+
+    InRelease is an inline (cleartext) signed document; Release.gpg is a
+    detached armored signature. Imported lazily so the module still loads if
+    signing is disabled and pgpy is unavailable.
+    """
+    import pgpy
+
+    key, _ = pgpy.PGPKey.from_blob(armored_private_key)
+
+    detached = key.sign(release)
+
+    message = pgpy.PGPMessage.new(release, cleartext=True)
+    message |= key.sign(message)
+
+    return str(message).encode(), str(detached).encode()
 
 
 @app.function_name(name="eventGridTrigger")
