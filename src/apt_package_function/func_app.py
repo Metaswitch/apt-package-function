@@ -4,10 +4,10 @@
 
 import json
 import logging
-import os
-import subprocess
 import tempfile
 import time
+import urllib.request
+from enum import IntEnum
 from pathlib import Path
 from subprocess import CalledProcessError
 from types import TracebackType
@@ -18,6 +18,23 @@ from apt_package_function.azcmd import AzCmdJson, AzCmdNone
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
+
+# The files that make up the deployable function app package.
+FUNCTION_APP_FILES = [
+    Path("host.json"),
+    Path("requirements.txt"),
+    Path("function_app.py"),
+]
+
+
+class DeployStatus(IntEnum):
+    """Kudu deployment status codes (from /api/deployments/latest)."""
+
+    PENDING = 0
+    BUILDING = 1
+    DEPLOYING = 2
+    FAILED = 3
+    SUCCESS = 4
 
 
 class FuncApp:
@@ -35,6 +52,12 @@ class FuncApp:
         self.resource_group = resource_group
         self.output_path = output_path
         self.subscription = subscription
+
+    def build_function_zip(self) -> None:
+        """Write the function app package to the output path."""
+        with ZipFile(self.output_path, "w") as zipf:
+            for path in FUNCTION_APP_FILES:
+                zipf.write(path, path.name)
 
     def wait_for_event_trigger(self) -> None:
         """Wait until the function app has an eventGridTrigger function."""
@@ -103,16 +126,7 @@ class FuncAppZip(FuncApp):
             name, resource_group, Path(self.tempfile.name), subscription=subscription
         )
 
-        self.zip_paths = [
-            Path("host.json"),
-            Path("requirements.txt"),
-            Path("function_app.py"),
-        ]
-
-        with ZipFile(self.tempfile, "w") as zipf:
-            for path in self.zip_paths:
-                zipf.write(path, path.name)
-
+        self.build_function_zip()
         self.tempfile.close()
 
     def deploy(self) -> None:
@@ -141,56 +155,94 @@ class FuncAppZip(FuncApp):
 
 
 class FuncAppBundle(FuncApp):
-    """Publishes the function app using the core-tools tooling."""
+    """Publishes the function app via the Azure "One Deploy" endpoint.
+
+    Used when shared-key access is disabled. Both 'az functionapp deployment
+    source config-zip' and 'az functionapp deploy' insist on fetching SCM basic
+    publishing credentials, which are disabled on such apps, so they fail with
+    HTTP 403. Instead we POST the package straight to the One Deploy endpoint
+    with an AAD bearer token, which is accepted. This needs only 'az' (for the
+    token); no Docker image or Azure Functions Core Tools are required.
+    """
+
+    # Poll the deployment for at most this long (remote build can be slow).
+    _DEPLOY_TIMEOUT_S = 600
+    _DEPLOY_POLL_INTERVAL_S = 15
 
     def __init__(
         self, name: str, resource_group: str, subscription: Optional[str] = None
     ) -> None:
         """Create a FuncAppBundle object."""
+        self.tempfile = tempfile.NamedTemporaryFile(suffix=".zip", delete=False)
         super().__init__(
-            name, resource_group, Path("function_app.zip"), subscription=subscription
+            name, resource_group, Path(self.tempfile.name), subscription=subscription
         )
+        self.build_function_zip()
+        self.tempfile.close()
+
+    def _access_token(self) -> str:
+        """Get an AAD access token for the deployment endpoint."""
+        token: str = AzCmdJson(
+            ["az", "account", "get-access-token", "--query", "accessToken"],
+            subscription=self.subscription,
+        ).run()
+        return token
 
     def deploy(self) -> None:
-        """Deploy the function application."""
-        log.info("Deploying function app code")
-        cwd = Path.cwd()
+        """Deploy the function app via One Deploy with a bearer token."""
+        log.info("Deploying function app code to %s", self.name)
+        token = self._access_token()
 
-        # Mint an access token on the host: the host 'az' can read its own
-        # credential cache, whereas the (older) 'az' inside the core-tools image
-        # cannot deserialise a cache written by a newer host 'az'. So instead of
-        # mounting ~/.azure into the container, pass a token to 'func' directly.
-        token_cmd = ["az", "account", "get-access-token", "--query", "accessToken"]
-        token = AzCmdJson(token_cmd, subscription=self.subscription).run()
+        data = self.output_path.read_bytes()
+        # RemoteBuild=true runs the build on Azure (Oryx) at the app's own
+        # runtime, so nothing local needs to match the target Python version.
+        url = (
+            f"https://{self.name}.scm.azurewebsites.net/api/publish"
+            "?type=zip&RemoteBuild=true"
+        )
+        request = urllib.request.Request(  # noqa: S310
+            url,
+            data=data,
+            method="POST",
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/zip",
+            },
+        )
+        with urllib.request.urlopen(request) as response:  # noqa: S310
+            log.info("Deployment accepted (HTTP %s), awaiting build", response.status)
 
-        # Pass the token via the environment so it never appears in the logged
-        # command line or the container's process arguments.
-        func_cmd = f'func azure functionapp publish {self.name} --python --build remote --access-token "$FUNC_ACCESS_TOKEN"'
-        if self.subscription:
-            func_cmd += f" --subscription {self.subscription}"
-
-        # Publish the application using the core-tools tooling.
-        #
-        # The image's Python version need not match the app runtime: with
-        # '--build remote' the build runs on Azure (Oryx) at the target
-        # runtime, and this image only packages and uploads. 3.11 is the newest
-        # published core-tools image (no 3.12/3.13 exists), and it deploys
-        # 3.13 apps fine.
-        cmd = [
-            "docker",
-            "run",
-            "--rm",
-            "-e",
-            "FUNC_ACCESS_TOKEN",
-            "-v",
-            f"{cwd}:/function_app",
-            "-w",
-            "/function_app",
-            "mcr.microsoft.com/azure-functions/python:4-python3.11-core-tools",
-            "bash",
-            "-c",
-            func_cmd,
-        ]
-        log.debug("Running %s", cmd)
-        subprocess.run(cmd, check=True, env={**os.environ, "FUNC_ACCESS_TOKEN": token})
+        self._wait_for_deployment(token)
         log.info("Function app code published to %s", self.name)
+
+    def _wait_for_deployment(self, token: str) -> None:
+        """Poll the latest deployment until it succeeds, or raise on failure."""
+        url = f"https://{self.name}.scm.azurewebsites.net/api/deployments/latest"
+        deadline = time.monotonic() + self._DEPLOY_TIMEOUT_S
+        while time.monotonic() < deadline:
+            request = urllib.request.Request(  # noqa: S310
+                url, headers={"Authorization": f"Bearer {token}"}
+            )
+            with urllib.request.urlopen(request) as response:  # noqa: S310
+                info = json.loads(response.read())
+
+            status = info.get("status")
+            try:
+                status_name = DeployStatus(status).name
+            except ValueError:
+                status_name = f"Unknown({status})"
+            log.info(
+                "Deployment status: %s %s", status_name, info.get("status_text", "")
+            )
+            if status == DeployStatus.SUCCESS:
+                return
+            if status == DeployStatus.FAILED:
+                raise RuntimeError(
+                    f"Deployment of {self.name} failed: {info.get('status_text', '')}"
+                )
+            time.sleep(self._DEPLOY_POLL_INTERVAL_S)
+
+        raise TimeoutError(
+            f"Deployment of {self.name} did not complete within "
+            f"{self._DEPLOY_TIMEOUT_S}s"
+        )

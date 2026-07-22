@@ -18,9 +18,6 @@ an Azure Function App to keep it up to date. For use with
 - Azure CLI
   - Installation instructions available at https://learn.microsoft.com/en-us/cli/azure/install-azure-cli
 
-- Docker (when not using shared key access from the function app to the storage container)
-  - Installation instructions available at https://docs.docker.com/engine/install/
-
 ## Basic usage
 
 To create a new Debian package repository with an Azure Function App, run
@@ -50,9 +47,10 @@ poetry run create-resources --location uksouth <resource_group_name>
 ## No shared-key access / Managed Identities
 
 By default, the storage container that is created has shared-key access enabled.
-You can instead create a deployment that uses Managed Identities, but this
-requires Docker (as the function application and its dependencies must be
-compiled and packed appropriately).
+You can instead create a deployment that uses Managed Identities. In this mode
+the function code is published with an Azure AD token via the "One Deploy"
+endpoint (shared-key and SCM basic-auth publishing are both disabled), so only
+the Azure CLI is required — no Docker or Azure Functions Core Tools.
 
 To create a new Debian package repository which uses Managed Identities, run
 
