@@ -52,7 +52,7 @@ var common_storage_properties = {
 var storage_properties = use_shared_keys ? common_storage_properties : union(common_storage_properties, {
   allowSharedKeyAccess: false
 })
-resource storageAccount 'Microsoft.Storage/storageAccounts@2025-06-01' = {
+resource storageAccount 'Microsoft.Storage/storageAccounts@2025-08-01' = {
   name: storage_account_name
   location: location
   kind: 'StorageV2'
@@ -63,17 +63,17 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2025-06-01' = {
 }
 
 // Create a container for the packages
-resource defBlobServices 'Microsoft.Storage/storageAccounts/blobServices@2025-06-01' = {
+resource defBlobServices 'Microsoft.Storage/storageAccounts/blobServices@2025-08-01' = {
   parent: storageAccount
   name: 'default'
 }
-resource packageContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2025-06-01' = {
+resource packageContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2025-08-01' = {
   parent: defBlobServices
   name: package_container_name
   properties: {
   }
 }
-resource pythonContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2025-06-01' = {
+resource pythonContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2025-08-01' = {
   parent: defBlobServices
   name: python_container_name
   properties: {

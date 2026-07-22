@@ -7,9 +7,9 @@ license = "MIT"
 version = "1.0.0"
 readme = "README.md"
 authors = [{name = "Max Dymond", email = "max.dymond@alianza.com"}]
-requires-python = '>=3.9.2,<4.0.0'
+requires-python = '>=3.13,<4.0.0'
 dependencies = [
-    'azure-functions (>=1.21.3,<2.0.0)',
+    'azure-functions (>=2.2.0,<2.3.0)',
     'azure-identity (>=1.19.0,<2.0.0)',
     'azure-storage-blob (>=12.23.1,<13.0.0)',
     'pydpkg (>=1.9.3,<2.0.0)',
@@ -29,7 +29,7 @@ requires-poetry = '>=2.0'
 poetry-plugin-export = ">=1.8"
 
 [tool.poetry.group.dev.dependencies]
-mypy = "^1"
+mypy = "^2.0.0"
 ruff = "^0.15.0"
 
 [build-system]
