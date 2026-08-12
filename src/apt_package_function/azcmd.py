@@ -5,7 +5,7 @@
 import json
 import logging
 import subprocess
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 log = logging.getLogger(__name__)
 log.addHandler(logging.NullHandler())
@@ -16,13 +16,13 @@ class AzCmd:
 
     OUTPUT: str
 
-    def __init__(self, cmd: List[str], subscription: Optional[str] = None) -> None:
+    def __init__(self, cmd: list[str], subscription: str | None = None) -> None:
         """Create an AzCmd object"""
         self.cmd = cmd
         if subscription:
             self.cmd = [*cmd, "--subscription", subscription]
 
-    def _run_cmd(self, cmd: List[str]) -> Any:  # noqa: ANN401
+    def _run_cmd(self, cmd: list[str]) -> Any:  # noqa: ANN401
         """Runs a command and may return output"""
         raise NotImplementedError
 
@@ -54,7 +54,7 @@ class AzCmdNone(AzCmd):
         """Run the Azure CLI command"""
         self._az_cmd()
 
-    def _run_cmd(self, cmd: List[str]) -> None:
+    def _run_cmd(self, cmd: list[str]) -> None:
         """Run a command but don't capture the output"""
         subprocess.run(cmd, check=True)
 
@@ -69,21 +69,21 @@ class AzCmdJson(AzCmd):
         data = self._az_cmd()
         return json.loads(data)
 
-    def _run_cmd(self, cmd: List[str]) -> str:
+    def _run_cmd(self, cmd: list[str]) -> str:
         return subprocess.check_output(cmd, encoding="utf-8")
 
-    def run_expect_dict(self) -> Dict[str, Any]:
+    def run_expect_dict(self) -> dict[str, Any]:
         """Run the Azure CLI command and return the result as a dictionary"""
-        data: Dict[str, Any] = self.run()
+        data: dict[str, Any] = self.run()
         if not isinstance(data, dict):
-            raise ValueError(
+            raise TypeError(
                 f"Expected a dictionary, got {data.__class__.__name__}: {data}"
             )
         return data
 
-    def run_expect_list(self) -> List[str]:
+    def run_expect_list(self) -> list[str]:
         """Run the Azure CLI command and return the result as a list of strings"""
-        data: Dict[str, Any] = self.run()
+        data: list[str] = self.run()
         if not isinstance(data, list):
-            raise ValueError(f"Expected a list, got {data}")
+            raise TypeError(f"Expected a list, got {data}")
         return data

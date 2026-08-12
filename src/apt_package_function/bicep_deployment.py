@@ -6,7 +6,7 @@ import logging
 import tempfile
 from contextlib import ExitStack
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 from apt_package_function.azcmd import AzCmdJson, AzCmdNone
 
@@ -22,10 +22,10 @@ class BicepDeployment:
         deployment_name: str,
         resource_group_name: str,
         template_file: Path,
-        parameters: Dict[str, Any],
+        parameters: dict[str, Any],
         description: str,
-        subscription: Optional[str] = None,
-        secure_parameters: Optional[Dict[str, str]] = None,
+        subscription: str | None = None,
+        secure_parameters: dict[str, str] | None = None,
     ) -> None:
         """Create a BicepDeployment object.
 
@@ -85,7 +85,7 @@ class BicepDeployment:
             cmd.run()
         log.info("Finished deploying %s", self.description)
 
-    def outputs(self) -> Dict[str, Any]:
+    def outputs(self) -> dict[str, Any]:
         """Get the outputs of the deployment."""
         cmd = AzCmdJson(
             [

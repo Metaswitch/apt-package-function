@@ -8,6 +8,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import TextIO
 
+log = logging.getLogger(__name__)
+
 
 def common_logging(name: str, filename: str, stream: TextIO = sys.stdout) -> None:
     """Set up common logging."""
@@ -21,7 +23,7 @@ def common_logging(name: str, filename: str, stream: TextIO = sys.stdout) -> Non
     log_path = Path(log_filename)
 
     # Get the current time as a timestamp
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    timestamp = datetime.now().astimezone().strftime("%Y-%m-%d_%H-%M-%S")
 
     rootdir = Path(__file__).parent.parent.parent
     logsdir = rootdir / "logs"
@@ -49,4 +51,4 @@ def common_logging(name: str, filename: str, stream: TextIO = sys.stdout) -> Non
     root_logger.setLevel(logging.DEBUG)
 
     logging.getLogger("urllib3").setLevel(logging.INFO)
-    logging.info("Logging to %s", logspath)
+    log.info("Logging to %s", logspath)

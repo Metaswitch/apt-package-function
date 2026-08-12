@@ -3,7 +3,6 @@
 """Manages resource groups."""
 
 import logging
-from typing import Optional
 
 from apt_package_function.azcmd import AzCmdNone
 
@@ -12,7 +11,7 @@ log.addHandler(logging.NullHandler())
 
 
 def create_rg(
-    resource_group: str, location: str, subscription: Optional[str] = None
+    resource_group: str, location: str, subscription: str | None = None
 ) -> None:
     """Create a resource group."""
     log.debug("Creating resource group %s in location %s", resource_group, location)

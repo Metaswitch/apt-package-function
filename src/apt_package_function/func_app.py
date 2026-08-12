@@ -11,7 +11,7 @@ from enum import IntEnum
 from pathlib import Path
 from subprocess import CalledProcessError
 from types import TracebackType
-from typing import Optional, Type
+from typing import Self
 from zipfile import ZipFile
 
 from apt_package_function.azcmd import AzCmdJson, AzCmdNone
@@ -45,7 +45,7 @@ class FuncApp:
         name: str,
         resource_group: str,
         output_path: Path,
-        subscription: Optional[str] = None,
+        subscription: str | None = None,
     ) -> None:
         """Create a FuncApp object."""
         self.name = name
@@ -95,15 +95,15 @@ class FuncApp:
 
             time.sleep(5)
 
-    def __enter__(self) -> "FuncApp":
+    def __enter__(self) -> Self:
         """Return the object for use in a context manager."""
         return self
 
     def __exit__(
         self,
-        _exc_type: Optional[Type[BaseException]],
-        _exc_value: Optional[BaseException],
-        _exc_traceback: Optional[TracebackType],
+        _exc_type: type[BaseException] | None,
+        _exc_value: BaseException | None,
+        _exc_traceback: TracebackType | None,
     ) -> None:
         """Clean up the object."""
         if self.output_path.exists():
@@ -118,10 +118,14 @@ class FuncAppZip(FuncApp):
     """Class for managing zipped function apps."""
 
     def __init__(
-        self, name: str, resource_group: str, subscription: Optional[str] = None
+        self, name: str, resource_group: str, subscription: str | None = None
     ) -> None:
         """Create a FuncAppZip object."""
-        self.tempfile = tempfile.NamedTemporaryFile(suffix=".zip", delete=False)
+        # delete=False so the path outlives the handle: we only want a unique
+        # temp path to build the zip into. FuncApp.__exit__ unlinks it.
+        self.tempfile = tempfile.NamedTemporaryFile(  # noqa: SIM115
+            suffix=".zip", delete=False
+        )
         super().__init__(
             name, resource_group, Path(self.tempfile.name), subscription=subscription
         )
@@ -170,10 +174,14 @@ class FuncAppBundle(FuncApp):
     _DEPLOY_POLL_INTERVAL_S = 15
 
     def __init__(
-        self, name: str, resource_group: str, subscription: Optional[str] = None
+        self, name: str, resource_group: str, subscription: str | None = None
     ) -> None:
         """Create a FuncAppBundle object."""
-        self.tempfile = tempfile.NamedTemporaryFile(suffix=".zip", delete=False)
+        # delete=False so the path outlives the handle: we only want a unique
+        # temp path to build the zip into. FuncApp.__exit__ unlinks it.
+        self.tempfile = tempfile.NamedTemporaryFile(  # noqa: SIM115
+            suffix=".zip", delete=False
+        )
         super().__init__(
             name, resource_group, Path(self.tempfile.name), subscription=subscription
         )
@@ -200,7 +208,7 @@ class FuncAppBundle(FuncApp):
             f"https://{self.name}.scm.azurewebsites.net/api/publish"
             "?type=zip&RemoteBuild=true"
         )
-        request = urllib.request.Request(  # noqa: S310
+        request = urllib.request.Request(
             url,
             data=data,
             method="POST",
@@ -220,7 +228,7 @@ class FuncAppBundle(FuncApp):
         url = f"https://{self.name}.scm.azurewebsites.net/api/deployments/latest"
         deadline = time.monotonic() + self._DEPLOY_TIMEOUT_S
         while time.monotonic() < deadline:
-            request = urllib.request.Request(  # noqa: S310
+            request = urllib.request.Request(
                 url, headers={"Authorization": f"Bearer {token}"}
             )
             with urllib.request.urlopen(request) as response:  # noqa: S310
