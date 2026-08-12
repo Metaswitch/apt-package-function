@@ -9,9 +9,9 @@ import logging
 import lzma
 import os
 import tempfile
+from collections.abc import Generator
 from email.utils import formatdate
 from pathlib import Path
-from typing import Generator, Optional
 
 import azure.functions as func
 import pydpkg
@@ -36,9 +36,9 @@ GPG_PRIVATE_KEY = os.environ.get("GPG_PRIVATE_KEY")
 
 
 @contextlib.contextmanager
-def temporary_filename() -> Generator[str, None, None]:
+def temporary_filename() -> Generator[str]:
     """Create a temporary file and return the filename."""
-    temporary_name: Optional[str] = None
+    temporary_name: str | None = None
     try:
         with tempfile.NamedTemporaryFile(delete=False) as f:
             temporary_name = f.name

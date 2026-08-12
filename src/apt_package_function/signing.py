@@ -36,7 +36,7 @@ def load_private_key(path: str) -> str:
 
     try:
         key, _ = pgpy.PGPKey.from_blob(blob)
-    except Exception as e:  # noqa: BLE001 - pgpy raises a variety of errors
+    except Exception as e:  # pgpy raises a variety of errors
         raise ValueError(f"Could not parse a PGP key from {path}: {e}") from e
 
     if not key.is_public and key.is_protected:

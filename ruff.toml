@@ -14,11 +14,7 @@ indent-width = 4
 target-version = "py313"
 
 [lint]
-# Select explicitly rather than using extend-select, so that the rule set is
-# pinned against changes to ruff's defaults (0.16 grew the default set from 59
-# to 413 rules, which silently enabled ~360 new rules here).
-select = [
-    "F",   # pyflakes (previously picked up from ruff's defaults)
+extend-select = [
     "E",
     "I",   # isort
     "D",   # pydocstyle

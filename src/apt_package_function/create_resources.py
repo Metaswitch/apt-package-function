@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # Copyright (c) Alianza, Inc. All rights reserved.
 # Licensed under the MIT License.
 """Creates resources for the apt package function in Azure."""
